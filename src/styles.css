@@ -1,0 +1,473 @@
+@import "tailwindcss" source(none);
+@source "../src";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: "Inter", system-ui, sans-serif;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
+
+:root {
+  /* Aman Traders — dark studio with orange glow */
+  --background: #0a0705;
+  --foreground: #f5f0ea;
+  --card: #14100c;
+  --card-2: #1a1510;
+  --muted: #1c1712;
+  --muted-foreground: #a89a8c;
+  --primary: #f97316; /* orange-500 */
+  --primary-2: #fb923c; /* orange-400 */
+  --primary-foreground: #ffffff;
+  --accent: #f97316;
+  --accent-foreground: #ffffff;
+  --border: rgba(249, 115, 22, 0.18);
+  --border-strong: rgba(249, 115, 22, 0.35);
+  --ring: #f97316;
+
+  --gradient-orange: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+  --glow-orange: 0 0 30px rgba(249, 115, 22, 0.35), 0 8px 24px rgba(249, 115, 22, 0.28);
+  --glow-orange-sm: 0 0 12px rgba(249, 115, 22, 0.25);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html,
+  body {
+    background:
+      radial-gradient(1000px 500px at 50% -200px, rgba(249, 115, 22, 0.22), transparent 60%),
+      var(--background);
+    background-attachment: fixed;
+    color: var(--foreground);
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
+    overscroll-behavior-y: none;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  button {
+    cursor: pointer;
+  }
+  input,
+  textarea,
+  select {
+    color: var(--foreground);
+  }
+}
+
+/* ---------- Cards / tiles ---------- */
+@utility tile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+@utility tile {
+  &:active {
+    transform: scale(0.97);
+  }
+  &:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--glow-orange-sm);
+  }
+}
+@utility tile-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--gradient-orange);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--glow-orange-sm);
+}
+
+/* ---------- Dashboard chips (top row) ---------- */
+@utility chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 6px 4px;
+}
+@utility chip-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+@utility chip {
+  &:active .chip-icon {
+    transform: scale(0.94);
+  }
+  &:hover .chip-icon {
+    border-color: var(--border-strong);
+    box-shadow: var(--glow-orange-sm);
+  }
+}
+@utility chip-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+}
+
+/* ---------- Floating action button (orange gradient) ---------- */
+@utility fab {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 30;
+  background: var(--gradient-orange);
+  color: #fff;
+  border-radius: 999px;
+  padding: 14px 22px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--glow-orange);
+  border: none;
+}
+@utility fab {
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+/* ---------- List row card ---------- */
+@utility list-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.15s;
+}
+@utility list-card {
+  &:hover {
+    border-color: var(--border-strong);
+  }
+}
+
+/* ---------- Form fields ---------- */
+@utility field {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  font-size: 14px;
+  color: var(--foreground);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+@utility field {
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
+  }
+  &::placeholder {
+    color: #6b5d51;
+  }
+}
+textarea.field {
+  padding: 14px 16px;
+  line-height: 1.6;
+  min-height: 84px;
+}
+@utility field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+/* ---------- Buttons ---------- */
+@utility btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--gradient-orange);
+  color: #fff;
+  padding: 14px 22px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: none;
+  width: 100%;
+  box-shadow: var(--glow-orange);
+}
+@utility btn-primary {
+  &:active {
+    transform: scale(0.98);
+  }
+  &:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+}
+@utility btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--primary);
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-strong);
+}
+@utility btn-outline {
+  &:hover {
+    background: rgba(249, 115, 22, 0.08);
+  }
+}
+
+/* ---------- Bottom-sheet modals ---------- */
+@utility modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: end;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+}
+@utility quick-modal {
+  width: 100%;
+  max-height: min(88vh, 720px);
+  overflow-y: auto;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px max(28px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(420px 220px at 80% -40px, rgba(249, 115, 22, 0.18), transparent 65%),
+    var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border-strong);
+  border-bottom: 0;
+  box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.55);
+}
+@utility quick-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@utility quick-modal-title {
+  color: var(--foreground);
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+@utility modal-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid var(--border-strong);
+}
+@utility modal-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .modal-backdrop {
+    place-items: center;
+    padding: 16px;
+  }
+  .quick-modal {
+    max-width: 440px;
+    border-radius: 24px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+}
+
+/* ---------- Numbered section header (01 CLIENT DETAILS) ---------- */
+@utility section-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px 16px;
+  margin-top: 16px;
+}
+@utility section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+@utility section-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid var(--border-strong);
+  color: var(--primary);
+  font-weight: 800;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+}
+@utility section-title {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  margin: 0;
+}
+
+/* ---------- Top bar ---------- */
+@utility topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(10, 7, 5, 0.85);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+@utility brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--gradient-orange);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: var(--glow-orange-sm);
+}
+@utility brand-name {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+}
+@utility brand-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--foreground);
+  text-transform: uppercase;
+  margin-top: -2px;
+}
+@utility icon-ring {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+  background: transparent;
+}
+
+/* ---------- Stat card (dashboard) ---------- */
+@utility stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 16px;
+}
+@utility stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+@utility stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  margin-top: 10px;
+  color: var(--foreground);
+}
+
+/* ---------- Pill badge (PENDING / APPROVED) ---------- */
+@utility pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(249, 115, 22, 0.15);
+  color: var(--primary);
+  border: 1px solid var(--border-strong);
+}

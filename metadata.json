@@ -1,0 +1,6 @@
+{
+  "name": "Quotation Software",
+  "description": "Quotation and invoice management software for creating, managing, and printing quotes and invoices.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
