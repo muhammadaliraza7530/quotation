@@ -30,9 +30,9 @@ const LineItemSchema = z.object({
   productId: z.string().trim().optional().nullable(),
   name: z.string().trim().min(1),
   description: z.string().trim().optional().nullable(),
-  qty: z.coerce.number().nonnegative(),
-  rate: z.coerce.number().nonnegative(),
-  taxPct: z.coerce.number().nonnegative(),
+  qty: z.coerce.number().nonnegative().catch(0),
+  rate: z.coerce.number().nonnegative().catch(0),
+  taxPct: z.coerce.number().nonnegative().catch(0),
   unit: z.string().trim().optional().nullable(),
 });
 
