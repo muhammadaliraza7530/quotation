@@ -37,6 +37,7 @@ import {
   type LineItem,
   type Customer,
   type Product,
+  type PresetProduct,
 } from "@/lib/store";
 import { Plus, Trash2, Save, Download, Package, UserPlus, X, Search } from "lucide-react";
 import { TemplatePicker } from "@/components/TemplatePicker";
@@ -47,6 +48,11 @@ import type { TemplateId } from "@/lib/pdf";
 import { normalizeProductDescriptionText } from "@/lib/product-text";
 
 const TYPES: DocType[] = ["quotation", "invoice", "po", "proforma", "delivery", "receipt"];
+
+const toFiniteNumber = (value: unknown) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
 
 export const Route = createFileRoute("/app/docs/$type/new")({
   parseParams: (p: Record<string, string>) => {
@@ -196,7 +202,12 @@ function DocForm() {
         client_phone: doc.customerSnap?.phone || null,
         client_email: null,
         client_address: doc.customerSnap?.address || null,
-        items: doc.items,
+        items: doc.items.map((item) => ({
+          ...item,
+          qty: toFiniteNumber(item.qty),
+          rate: toFiniteNumber(item.rate),
+          taxPct: toFiniteNumber(item.taxPct),
+        })),
         subtotal: totals.subtotal,
         tax_rate: doc.gstPct || 0,
         tax_amount: totals.tax,
@@ -381,10 +392,18 @@ function DocForm() {
     setNewProductOpen(false);
   };
 
-  const addProduct = (p: Product, qty = 1, unit = p.unit || "Unit", description?: string) => {
+  const addProduct = (
+    p: Product | PresetProduct,
+    qty = 1,
+    unit = p.unit || "Unit",
+    description?: string,
+  ) => {
     if (!doc) return;
-    const desc = description ||
-      [p.description, p.hsn && `HSN: ${p.hsn}`].filter(Boolean).join(" · ");
+    const desc =
+      description ||
+      [p.description, "hsn" in p && p.hsn && `HSN: ${p.hsn}`]
+        .filter(Boolean)
+        .join(" · ");
     patch({
       items: [
         ...(doc.items || []),
@@ -395,7 +414,7 @@ function DocForm() {
           description: desc,
           qty,
           rate: p.price,
-          taxPct: p.taxPct,
+          taxPct: toFiniteNumber("taxPct" in p ? p.taxPct : 0),
           unit,
         },
       ],
@@ -641,7 +660,7 @@ function DocForm() {
             product: p,
             onClick: () =>
               setSelectedProduct({
-                product: p,
+                product: { ...p, taxPct: 0, createdAt: 0 },
                 quantity: 1,
                 unit: p.unit || "Unit",
                 description: p.description,
