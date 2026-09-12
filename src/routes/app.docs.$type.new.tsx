@@ -39,7 +39,17 @@ import {
   type Product,
   type PresetProduct,
 } from "@/lib/store";
-import { Plus, Trash2, Save, Download, Package, UserPlus, X, Search } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Save,
+  Download,
+  Package,
+  UserPlus,
+  X,
+  Search,
+  ChevronDown,
+} from "lucide-react";
 import { TemplatePicker } from "@/components/TemplatePicker";
 import { PdfPreviewModal } from "@/components/PdfPreviewModal";
 import { UnitPicker } from "@/components/UnitPicker";
@@ -68,13 +78,42 @@ export const Route = createFileRoute("/app/docs/$type/new")({
   component: DocForm,
 });
 
-function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+function Section({
+  n,
+  title,
+  children,
+  open,
+  onToggle,
+}: {
+  n: string;
+  title: string;
+  children: React.ReactNode;
+  open?: boolean;
+  onToggle?: () => void;
+}) {
   return (
     <div className="section-card">
-      <div className="section-head">
-        <div className="section-badge">{n}</div>
-        <h2 className="section-title">{title}</h2>
-      </div>
+      {onToggle ? (
+        <button
+          type="button"
+          className="section-head w-full text-left"
+          onClick={onToggle}
+          aria-expanded={open}
+        >
+          <div className="section-badge">{n}</div>
+          <h2 className="section-title flex-1">{title}</h2>
+          <ChevronDown
+            size={22}
+            className="transition-transform duration-200"
+            style={{ transform: open ? "rotate(180deg)" : "none", color: "var(--primary)" }}
+          />
+        </button>
+      ) : (
+        <div className="section-head">
+          <div className="section-badge">{n}</div>
+          <h2 className="section-title">{title}</h2>
+        </div>
+      )}
       {children}
     </div>
   );
@@ -113,13 +152,8 @@ function DocForm() {
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newProductOpen, setNewProductOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<{
-    product: Product;
-    quantity: number;
-    unit: string;
-    description: string;
-  } | null>(null);
   const [productQ, setProductQ] = useState("");
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -401,9 +435,7 @@ function DocForm() {
     if (!doc) return;
     const desc =
       description ||
-      [p.description, "hsn" in p && p.hsn && `HSN: ${p.hsn}`]
-        .filter(Boolean)
-        .join(" · ");
+      [p.description, "hsn" in p && p.hsn && `HSN: ${p.hsn}`].filter(Boolean).join(" · ");
     patch({
       items: [
         ...(doc.items || []),
@@ -647,138 +679,132 @@ function DocForm() {
       </Section>
 
       {/* 02 PRODUCTS */}
-      <Section n="02" title="Products">
-        {(() => {
-          const s = productQ.trim().toLowerCase();
-          const presetTiles = PRESET_PRODUCTS.map((p) => ({
-            key: p.id,
-            name: p.name,
-            unit: p.unit,
-            price: p.price,
-            icon: p.icon,
-            description: p.description,
-            product: p,
-            onClick: () =>
-              setSelectedProduct({
-                product: { ...p, taxPct: 0, createdAt: 0 },
-                quantity: 1,
-                unit: p.unit || "Unit",
-                description: p.description,
-              }),
-          }));
-          const customTiles = products.map((p) => ({
-            key: p.id,
-            name: p.name,
-            unit: "custom",
-            price: p.price,
-            icon: "📦",
-            description: p.description,
-            product: p,
-            onClick: () =>
-              setSelectedProduct({
-                product: p,
-                quantity: 1,
-                unit: p.unit || "Unit",
-                description: p.description,
-              }),
-          }));
-          const all = [...presetTiles, ...customTiles];
-          const shown = s
-            ? all.filter(
-                (t) =>
-                  t.name.toLowerCase().includes(s) ||
-                  t.description.toLowerCase().includes(s) ||
-                  String(t.price).includes(s),
-              )
-            : all;
-          return (
-            <>
-              <div className="relative mb-3">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2"
-                  style={{ color: "var(--muted-foreground)" }}
-                />
-                <input
-                  value={productQ}
-                  onChange={(e) => setProductQ(e.target.value)}
-                  className="field pl-9 pr-9"
-                  placeholder="Search products"
-                />
-                {productQ && (
-                  <button
-                    type="button"
-                    onClick={() => setProductQ("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-              {shown.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  {shown.map((t) => (
-                    <button
-                      key={t.key}
-                      type="button"
-                      onClick={t.onClick}
-                      className="tile text-left"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="text-[22px] leading-none">{t.icon}</div>
-                        <div
-                          className="grid h-8 w-8 place-items-center rounded-full"
-                          style={{
-                            background: "rgba(249,115,22,0.15)",
-                            border: "1px solid var(--border-strong)",
-                            color: "var(--primary)",
-                          }}
-                        >
-                          <Plus size={14} />
-                        </div>
-                      </div>
-                      <div className="font-extrabold text-[14px] leading-tight mt-2">{t.name}</div>
-                      <div
-                        className="text-[10px] font-bold uppercase tracking-widest mt-0.5"
-                        style={{ color: "var(--muted-foreground)" }}
-                      >
-                        {t.unit}
-                      </div>
-                      <div
-                        className="text-[14px] font-extrabold mt-2"
-                        style={{ color: "var(--primary)" }}
-                      >
-                        {fmtMoney(t.price)}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  className="stat-card text-center text-[12px] mb-4"
-                  style={{ color: "var(--muted-foreground)" }}
-                >
-                  No matching products. Try another search or add a new one below.
-                </div>
-              )}
-              <div
-                className="stat-card text-center text-[12px] mb-4"
-                style={{ color: "var(--muted-foreground)" }}
-              >
-                Click any product card above to begin the quotation.
-              </div>
-            </>
-          );
-        })()}
+      <Section
+        n="02"
+        title="Products"
+        open={productPickerOpen}
+        onToggle={() => setProductPickerOpen((open) => !open)}
+      >
+        {productPickerOpen && (
+          <>
+            {(() => {
+              const s = productQ.trim().toLowerCase();
+              const availableProducts: Array<{
+                product: Product | PresetProduct;
+                description: string;
+              }> = [
+                ...PRESET_PRODUCTS.map((p) => ({ product: p, description: p.description })),
+                ...products.map((p) => ({ product: p, description: p.description })),
+              ];
+              const shown = availableProducts.filter(({ product, description }) =>
+                s
+                  ? product.name.toLowerCase().includes(s) ||
+                    description.toLowerCase().includes(s) ||
+                    String(product.price).includes(s)
+                  : true,
+              );
+              const selectProduct = (product: Product | PresetProduct) => {
+                addProduct(
+                  "taxPct" in product ? product : { ...product, taxPct: 0, createdAt: 0 },
+                  1,
+                  product.unit || "Unit",
+                  product.description,
+                );
+                setProductQ("");
+                setProductPickerOpen(false);
+              };
 
-        <button
-          type="button"
-          onClick={() => setNewProductOpen(true)}
-          className="btn-outline w-full mb-4"
-        >
-          <Plus size={14} /> Add your own product
-        </button>
+              return (
+                <>
+                  <div className="relative mb-4">
+                    <label className="field-label">Add product</label>
+                    <div className="relative">
+                      <Search
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2"
+                        style={{ color: "var(--muted-foreground)" }}
+                      />
+                      <input
+                        value={productQ}
+                        onFocus={() => setProductPickerOpen(true)}
+                        onChange={(e) => {
+                          setProductQ(e.target.value);
+                          setProductPickerOpen(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setProductPickerOpen(false);
+                        }}
+                        className="field pl-9 pr-10"
+                        placeholder="Search products by name"
+                        role="combobox"
+                        aria-expanded={productPickerOpen}
+                        aria-controls="product-options"
+                      />
+                      <ChevronDown
+                        size={16}
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
+                        style={{ color: "var(--muted-foreground)" }}
+                      />
+                    </div>
+                    {productPickerOpen && (
+                      <div
+                        id="product-options"
+                        role="listbox"
+                        className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border p-1 shadow-xl"
+                        style={{ background: "var(--card)", borderColor: "var(--border-strong)" }}
+                      >
+                        {shown.length > 0 ? (
+                          shown.map(({ product }) => (
+                            <button
+                              key={product.id}
+                              type="button"
+                              role="option"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => selectProduct(product)}
+                              className="flex min-h-14 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-orange-50"
+                            >
+                              <span className="min-w-0">
+                                <span className="block truncate text-[13px] font-extrabold">
+                                  {product.name}
+                                </span>
+                                <span
+                                  className="mt-0.5 block text-[10px] font-bold uppercase tracking-wider"
+                                  style={{ color: "var(--muted-foreground)" }}
+                                >
+                                  {fmtMoney(product.price)} per {product.unit || "unit"}
+                                </span>
+                              </span>
+                              <Plus
+                                size={16}
+                                className="shrink-0"
+                                style={{ color: "var(--primary)" }}
+                              />
+                            </button>
+                          ))
+                        ) : (
+                          <div
+                            className="px-3 py-4 text-center text-[12px]"
+                            style={{ color: "var(--muted-foreground)" }}
+                          >
+                            No matching products
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+
+            <button
+              type="button"
+              onClick={() => setNewProductOpen(true)}
+              className="btn-outline w-full mb-4"
+            >
+              <Plus size={14} /> Add your own product
+            </button>
+          </>
+        )}
 
         <div className="space-y-3">
           {doc.items.map((it) => (
@@ -998,14 +1024,24 @@ function DocForm() {
           <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
             Selected Terms
           </div>
-          <button type="button" className="btn-outline justify-center px-3 py-2" onClick={() => setTermsModalOpen(true)}>
+          <button
+            type="button"
+            className="btn-outline justify-center px-3 py-2"
+            onClick={() => setTermsModalOpen(true)}
+          >
             Manage Terms
           </button>
         </div>
 
         <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-          {(doc.termIds?.length ? getTerms().filter((t) => doc.termIds!.includes(t.id)) : getTerms()).length > 0
-            ? (doc.termIds?.length ? getTerms().filter((t) => doc.termIds!.includes(t.id)) : getTerms())
+          {(doc.termIds?.length
+            ? getTerms().filter((t) => doc.termIds!.includes(t.id))
+            : getTerms()
+          ).length > 0
+            ? (doc.termIds?.length
+                ? getTerms().filter((t) => doc.termIds!.includes(t.id))
+                : getTerms()
+              )
                 .map((term) => term.title || "Standard term")
                 .join(" • ")
             : "No terms selected"}
@@ -1055,23 +1091,12 @@ function DocForm() {
           onClose={() => setPreviewTpl(null)}
         />
       )}
-      {selectedProduct && (
-        <ProductSelectionModal
-          product={selectedProduct.product}
-          initialQuantity={selectedProduct.quantity}
-          initialUnit={selectedProduct.unit}
-          initialDescription={selectedProduct.description}
-          onClose={() => setSelectedProduct(null)}
-          onAdd={(qty, unit, description) => {
-            addProduct(selectedProduct.product, qty, unit, description);
-            setSelectedProduct(null);
-          }}
-        />
-      )}
       {termsModalOpen && (
         <TermsSelectionModal
           allTerms={getTerms()}
-          selectedIds={doc.termIds && doc.termIds.length ? doc.termIds : getTerms().map((t) => t.id)}
+          selectedIds={
+            doc.termIds && doc.termIds.length ? doc.termIds : getTerms().map((t) => t.id)
+          }
           onClose={() => setTermsModalOpen(false)}
           onSave={(ids) => {
             patch({ termIds: ids });
@@ -1155,103 +1180,6 @@ function QuickClientModal({
         >
           Save Client
         </button>
-      </div>
-    </div>
-  );
-}
-
-function ProductSelectionModal({
-  product,
-  initialQuantity,
-  initialUnit,
-  initialDescription,
-  onClose,
-  onAdd,
-}: {
-  product: Product;
-  initialQuantity: number;
-  initialUnit: string;
-  initialDescription: string;
-  onClose: () => void;
-  onAdd: (qty: number, unit: string, description: string) => void;
-}) {
-  const [qty, setQty] = useState(initialQuantity > 0 ? initialQuantity : 1);
-  const [unit, setUnit] = useState(initialUnit || product.unit || "Unit");
-  const [description, setDescription] = useState(initialDescription || product.description || "");
-
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="quick-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="quick-modal-head">
-          <div className="quick-modal-title">Select Product</div>
-          <button onClick={onClose} className="modal-close" aria-label="Close">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-            Product
-          </div>
-          <div className="mt-2 text-lg font-extrabold text-slate-900">{product.name}</div>
-          <div className="mt-1 text-sm text-slate-600">{fmtMoney(product.price)} each</div>
-        </div>
-
-        <div className="mb-4">
-          <label className="field-label">Quantity</label>
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-2">
-            <button
-              type="button"
-              className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 text-lg font-bold text-slate-700"
-              onClick={() => setQty((current) => Math.max(1, current - 1))}
-              aria-label="Decrease quantity"
-            >
-              −
-            </button>
-            <div className="min-w-16 text-center text-2xl font-extrabold text-slate-900">{qty}</div>
-            <button
-              type="button"
-              className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 text-lg font-bold text-slate-700"
-              onClick={() => setQty((current) => current + 1)}
-              aria-label="Increase quantity"
-            >
-              +
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="field-label">Unit</label>
-          <input
-            className="field"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            placeholder="Per Sqft"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="field-label">Details</label>
-          <AutoResizeTextarea
-            minHeight={90}
-            className="mb-0"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter notes or specification details for this line item..."
-          />
-        </div>
-
-        <div className="modal-action-grid gap-3">
-          <button className="btn-outline justify-center" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className="btn-primary"
-            onClick={() => onAdd(qty, unit || "Unit", description.trim())}
-          >
-            Add to Quotation
-          </button>
-        </div>
       </div>
     </div>
   );
