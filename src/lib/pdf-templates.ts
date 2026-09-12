@@ -35,17 +35,7 @@ export type TemplateId =
   | "ribbon";
 
 export const TEMPLATES: { id: TemplateId; label: string; subtitle: string }[] = [
-  { id: "invoice", label: "Signature Studio", subtitle: "Aman Traders premium reference layout" },
-  { id: "classic", label: "Executive Bar", subtitle: "Bold orange top band" },
-  { id: "minimal", label: "Gallery Minimal", subtitle: "Airy layout, quiet accent" },
   { id: "stripe", label: "Surface Stripe", subtitle: "Left brand rail" },
-  { id: "corporate", label: "Boardroom Frame", subtitle: "Formal orange frame" },
-  { id: "branded", label: "Brand Seal", subtitle: "Corner seal accent" },
-  { id: "split", label: "Split Banner", subtitle: "Orange & green header" },
-  { id: "corner", label: "Corner Mark", subtitle: "Diagonal corner accent" },
-  { id: "grid", label: "Ledger Grid", subtitle: "Zebra rows, high readability" },
-  { id: "monogram", label: "Logo Hero", subtitle: "Large brand monogram" },
-  { id: "ribbon", label: "Ribbon Accent", subtitle: "Premium orange ribbon" },
 ];
 
 type Ctx = {
