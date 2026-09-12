@@ -12,7 +12,6 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
-import { BrandUpWelcome } from "../components/BrandUpWelcome";
 import { InstallAppButton } from "../components/InstallAppButton";
 
 function NotFoundComponent() {
@@ -142,7 +141,6 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Outlet />
-        <BrandUpWelcome />
         <InstallAppButton />
       </AuthProvider>
     </QueryClientProvider>
