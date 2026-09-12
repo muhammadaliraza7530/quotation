@@ -13,7 +13,7 @@ export function TemplatePicker({
   onPick: (id: TemplateId) => void;
   doc?: Doc;
 }) {
-  const [selected, setSelected] = useState<TemplateId>("invoice");
+  const [selected, setSelected] = useState<TemplateId>("stripe");
   const activeTemplate = useMemo(
     () => TEMPLATES.find((t) => t.id === selected) ?? TEMPLATES[0],
     [selected],
