@@ -68,7 +68,9 @@ async function buildPdf(doc: Doc, templateId: TemplateId, filenameOverride?: str
     ...baseBiz,
     logo: baseBiz.logo?.startsWith("data:image") ? baseBiz.logo : defaultLogo || baseBiz.logo,
   };
-  const terms = getTerms();
+  const allTerms = getTerms();
+  const selectedIds = doc.termIds?.length ? doc.termIds : allTerms.map((t) => t.id);
+  const terms = allTerms.filter((t) => selectedIds.includes(t.id));
   const pdf = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();

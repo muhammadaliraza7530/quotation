@@ -20,25 +20,24 @@
 }
 
 :root {
-  /* Aman Traders — dark studio with orange glow */
-  --background: #0a0705;
-  --foreground: #f5f0ea;
-  --card: #14100c;
-  --card-2: #1a1510;
-  --muted: #1c1712;
-  --muted-foreground: #a89a8c;
-  --primary: #f97316; /* orange-500 */
-  --primary-2: #fb923c; /* orange-400 */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-2: #f8fafc;
+  --muted: #eef2f7;
+  --muted-foreground: #475569;
+  --primary: #f97316;
+  --primary-2: #fb923c;
   --primary-foreground: #ffffff;
   --accent: #f97316;
   --accent-foreground: #ffffff;
-  --border: rgba(249, 115, 22, 0.18);
-  --border-strong: rgba(249, 115, 22, 0.35);
+  --border: #dfe7f1;
+  --border-strong: #cbd5e1;
   --ring: #f97316;
 
   --gradient-orange: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
-  --glow-orange: 0 0 30px rgba(249, 115, 22, 0.35), 0 8px 24px rgba(249, 115, 22, 0.28);
-  --glow-orange-sm: 0 0 12px rgba(249, 115, 22, 0.25);
+  --glow-orange: 0 10px 30px rgba(249, 115, 22, 0.12);
+  --glow-orange-sm: 0 8px 18px rgba(249, 115, 22, 0.08);
 }
 
 @layer base {
@@ -47,9 +46,7 @@
   }
   html,
   body {
-    background:
-      radial-gradient(1000px 500px at 50% -200px, rgba(249, 115, 22, 0.22), transparent 60%),
-      var(--background);
+    background: var(--background);
     background-attachment: fixed;
     color: var(--foreground);
     font-family: "Inter", system-ui, sans-serif;
@@ -63,6 +60,10 @@
   h4 {
     font-weight: 800;
     letter-spacing: -0.01em;
+    color: #0f172a;
+  }
+  p {
+    color: var(--muted-foreground);
   }
   button {
     cursor: pointer;
@@ -71,6 +72,7 @@
   textarea,
   select {
     color: var(--foreground);
+    background: #fff;
   }
 }
 
@@ -193,39 +195,42 @@
 /* ---------- Form fields ---------- */
 @utility field {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
   border: 1px solid var(--border);
-  background: var(--card-2);
-  font-size: 14px;
-  color: var(--foreground);
+  background: #ffffff;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #0f172a;
   outline: none;
   transition:
     border-color 0.15s,
-    box-shadow 0.15s;
+    box-shadow 0.15s,
+    background 0.15s;
 }
 @utility field {
   &:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
+    border-color: rgba(249, 115, 22, 0.55);
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.09);
+    background: #fff;
   }
   &::placeholder {
-    color: #6b5d51;
+    color: #94a3b8;
   }
 }
 textarea.field {
-  padding: 14px 16px;
+  padding: 15px 16px;
   line-height: 1.6;
-  min-height: 84px;
+  min-height: 96px;
 }
 @utility field-label {
   display: block;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--primary);
-  margin-bottom: 6px;
+  color: #334155;
+  margin-bottom: 8px;
 }
 
 /* ---------- Buttons ---------- */
@@ -344,40 +349,41 @@ textarea.field {
   }
 }
 
-/* ---------- Numbered section header (01 CLIENT DETAILS) ---------- */
+/* ---------- Numbered section header ---------- */
 @utility section-card {
-  background: var(--card);
+  background: #ffffff;
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 20px 16px;
-  margin-top: 16px;
+  border-radius: 24px;
+  padding: 24px 20px;
+  margin-top: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 @utility section-head {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
 }
 @utility section-badge {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: rgba(249, 115, 22, 0.15);
-  border: 1px solid var(--border-strong);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.18);
   color: var(--primary);
-  font-weight: 800;
+  font-weight: 900;
   font-size: 12px;
   display: grid;
   place-items: center;
 }
 @utility section-title {
-  font-weight: 800;
-  font-size: 18px;
+  font-weight: 900;
+  font-size: 20px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--foreground);
+  color: #0f172a;
   margin: 0;
 }
 
@@ -386,7 +392,7 @@ textarea.field {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(10, 7, 5, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
   padding: 12px 16px;

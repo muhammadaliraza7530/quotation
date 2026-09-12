@@ -8,6 +8,7 @@ import {
   type Doc,
   type Term,
 } from "./store";
+import { PRODUCT_DESCRIPTION_MAX_FONT_SIZE, sanitizeProductDescriptionForPdf } from "./product-text";
 
 // Palette mirrors the reference "Aman Trader Quotation Maker" premium PDF.
 const ORANGE = { r: 247, g: 115, b: 22 };
@@ -81,7 +82,8 @@ function lineHeight(size: number) {
 }
 
 function split(pdf: jsPDF, value: string | undefined, maxWidth: number) {
-  const source = (value || "").trim();
+  const raw = sanitizeProductDescriptionForPdf(value);
+  const source = raw.trim();
   return source ? (pdf.splitTextToSize(source, maxWidth) as string[]) : [];
 }
 
@@ -326,7 +328,7 @@ function itemsTable(
 
       if (visibleLines.length) {
         text(pdf, MUTED);
-        font(pdf, 9.1);
+        font(pdf, Math.min(9.1, PRODUCT_DESCRIPTION_MAX_FONT_SIZE));
         pdf.text(visibleLines, cols.desc, bodyY + 4 + (offset === 0 ? titleH + 4 : 16));
       }
 

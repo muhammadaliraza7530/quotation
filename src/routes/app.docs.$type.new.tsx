@@ -44,6 +44,7 @@ import { PdfPreviewModal } from "@/components/PdfPreviewModal";
 import { UnitPicker } from "@/components/UnitPicker";
 import { AutoResizeTextarea } from "@/components/AutoResizeTextarea";
 import type { TemplateId } from "@/lib/pdf";
+import { normalizeProductDescriptionText } from "@/lib/product-text";
 
 const TYPES: DocType[] = ["quotation", "invoice", "po", "proforma", "delivery", "receipt"];
 
@@ -80,6 +81,7 @@ function normalizeDoc(doc: Partial<Doc> | undefined, type: DocType): Doc {
     ...(doc ?? {}),
     items: doc?.items ?? baseline.items,
     notes: doc?.notes !== undefined ? doc.notes : baseline.notes,
+    termIds: doc?.termIds ?? baseline.termIds,
     discount: doc?.discount ?? baseline.discount,
     installation: doc?.installation ?? baseline.installation,
     delivery: doc?.delivery ?? baseline.delivery,
@@ -104,6 +106,13 @@ function DocForm() {
   const [previewTpl, setPreviewTpl] = useState<TemplateId | null>(null);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [newProductOpen, setNewProductOpen] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    product: Product;
+    quantity: number;
+    unit: string;
+    description: string;
+  } | null>(null);
   const [productQ, setProductQ] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -165,8 +174,10 @@ function DocForm() {
   const buildQuotationPayload = useCallback(
     (doc: Doc) => {
       const business = getBusiness();
+      const selectedIds = doc.termIds?.length ? doc.termIds : getTerms().map((t) => t.id);
       const terms =
         getTerms()
+          .filter((t) => selectedIds.includes(t.id))
           .map((t) => t.body)
           .filter(Boolean)
           .join("\n") || null;
@@ -370,9 +381,10 @@ function DocForm() {
     setNewProductOpen(false);
   };
 
-  const addProduct = (p: Product) => {
+  const addProduct = (p: Product, qty = 1, unit = p.unit || "Unit", description?: string) => {
     if (!doc) return;
-    const desc = [p.description, p.hsn && `HSN: ${p.hsn}`].filter(Boolean).join(" · ");
+    const desc = description ||
+      [p.description, p.hsn && `HSN: ${p.hsn}`].filter(Boolean).join(" · ");
     patch({
       items: [
         ...(doc.items || []),
@@ -381,10 +393,10 @@ function DocForm() {
           productId: p.id,
           name: p.name,
           description: desc,
-          qty: 1,
+          qty,
           rate: p.price,
           taxPct: p.taxPct,
-          unit: p.unit,
+          unit,
         },
       ],
     });
@@ -457,8 +469,8 @@ function DocForm() {
         </p>
       </div>
 
-      {/* 01 CLIENT DETAILS */}
-      <Section n="01" title="Client Details">
+      {/* 01 CUSTOMER */}
+      <Section n="01" title="Customer">
         {customers.length > 0 && (
           <>
             <label className="field-label">Existing Client</label>
@@ -615,8 +627,8 @@ function DocForm() {
         </div>
       </Section>
 
-      {/* 02 PRODUCT BUILDER */}
-      <Section n="02" title="Product Builder">
+      {/* 02 PRODUCTS */}
+      <Section n="02" title="Products">
         {(() => {
           const s = productQ.trim().toLowerCase();
           const presetTiles = PRESET_PRODUCTS.map((p) => ({
@@ -626,20 +638,13 @@ function DocForm() {
             price: p.price,
             icon: p.icon,
             description: p.description,
+            product: p,
             onClick: () =>
-              patch({
-                items: [
-                  ...doc.items,
-                  {
-                    key: uid(),
-                    name: p.name,
-                    description: p.description,
-                    qty: 1,
-                    rate: p.price,
-                    taxPct: 0,
-                    unit: p.unit,
-                  },
-                ],
+              setSelectedProduct({
+                product: p,
+                quantity: 1,
+                unit: p.unit || "Unit",
+                description: p.description,
               }),
           }));
           const customTiles = products.map((p) => ({
@@ -649,7 +654,14 @@ function DocForm() {
             price: p.price,
             icon: "📦",
             description: p.description,
-            onClick: () => addProduct(p),
+            product: p,
+            onClick: () =>
+              setSelectedProduct({
+                product: p,
+                quantity: 1,
+                unit: p.unit || "Unit",
+                description: p.description,
+              }),
           }));
           const all = [...presetTiles, ...customTiles];
           const shown = s
@@ -830,7 +842,11 @@ function DocForm() {
                   className="text-[13.5px]"
                   placeholder="Detailed description or specifications..."
                   value={it.description}
-                  onChange={(e) => updateItem(it.key, { description: e.target.value })}
+                  onChange={(e) =>
+                    updateItem(it.key, {
+                      description: normalizeProductDescriptionText(e.target.value),
+                    })
+                  }
                 />
               </div>
             </div>
@@ -957,8 +973,25 @@ function DocForm() {
         </div>
       </Section>
 
-      {/* 04 PROPOSAL NOTES */}
-      <Section n="04" title="Proposal Notes">
+      {/* 04 TERMS */}
+      <Section n="04" title="Terms">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+            Selected Terms
+          </div>
+          <button type="button" className="btn-outline justify-center px-3 py-2" onClick={() => setTermsModalOpen(true)}>
+            Manage Terms
+          </button>
+        </div>
+
+        <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          {(doc.termIds?.length ? getTerms().filter((t) => doc.termIds!.includes(t.id)) : getTerms()).length > 0
+            ? (doc.termIds?.length ? getTerms().filter((t) => doc.termIds!.includes(t.id)) : getTerms())
+                .map((term) => term.title || "Standard term")
+                .join(" • ")
+            : "No terms selected"}
+        </div>
+
         <AutoResizeTextarea
           minHeight={140}
           placeholder="Add proposal notes or terms"
@@ -1001,6 +1034,30 @@ function DocForm() {
             setPickerOpen(true);
           }}
           onClose={() => setPreviewTpl(null)}
+        />
+      )}
+      {selectedProduct && (
+        <ProductSelectionModal
+          product={selectedProduct.product}
+          initialQuantity={selectedProduct.quantity}
+          initialUnit={selectedProduct.unit}
+          initialDescription={selectedProduct.description}
+          onClose={() => setSelectedProduct(null)}
+          onAdd={(qty, unit, description) => {
+            addProduct(selectedProduct.product, qty, unit, description);
+            setSelectedProduct(null);
+          }}
+        />
+      )}
+      {termsModalOpen && (
+        <TermsSelectionModal
+          allTerms={getTerms()}
+          selectedIds={doc.termIds && doc.termIds.length ? doc.termIds : getTerms().map((t) => t.id)}
+          onClose={() => setTermsModalOpen(false)}
+          onSave={(ids) => {
+            patch({ termIds: ids });
+            setTermsModalOpen(false);
+          }}
         />
       )}
       {newClientOpen && (
@@ -1079,6 +1136,174 @@ function QuickClientModal({
         >
           Save Client
         </button>
+      </div>
+    </div>
+  );
+}
+
+function ProductSelectionModal({
+  product,
+  initialQuantity,
+  initialUnit,
+  initialDescription,
+  onClose,
+  onAdd,
+}: {
+  product: Product;
+  initialQuantity: number;
+  initialUnit: string;
+  initialDescription: string;
+  onClose: () => void;
+  onAdd: (qty: number, unit: string, description: string) => void;
+}) {
+  const [qty, setQty] = useState(initialQuantity > 0 ? initialQuantity : 1);
+  const [unit, setUnit] = useState(initialUnit || product.unit || "Unit");
+  const [description, setDescription] = useState(initialDescription || product.description || "");
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="quick-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="quick-modal-head">
+          <div className="quick-modal-title">Select Product</div>
+          <button onClick={onClose} className="modal-close" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+            Product
+          </div>
+          <div className="mt-2 text-lg font-extrabold text-slate-900">{product.name}</div>
+          <div className="mt-1 text-sm text-slate-600">{fmtMoney(product.price)} each</div>
+        </div>
+
+        <div className="mb-4">
+          <label className="field-label">Quantity</label>
+          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-2">
+            <button
+              type="button"
+              className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 text-lg font-bold text-slate-700"
+              onClick={() => setQty((current) => Math.max(1, current - 1))}
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+            <div className="min-w-16 text-center text-2xl font-extrabold text-slate-900">{qty}</div>
+            <button
+              type="button"
+              className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 text-lg font-bold text-slate-700"
+              onClick={() => setQty((current) => current + 1)}
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="field-label">Unit</label>
+          <input
+            className="field"
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+            placeholder="Per Sqft"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="field-label">Details</label>
+          <AutoResizeTextarea
+            minHeight={90}
+            className="mb-0"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter notes or specification details for this line item..."
+          />
+        </div>
+
+        <div className="modal-action-grid gap-3">
+          <button className="btn-outline justify-center" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="btn-primary"
+            onClick={() => onAdd(qty, unit || "Unit", description.trim())}
+          >
+            Add to Quotation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TermsSelectionModal({
+  allTerms,
+  selectedIds,
+  onClose,
+  onSave,
+}: {
+  allTerms: { id: string; title: string; body: string }[];
+  selectedIds: string[];
+  onClose: () => void;
+  onSave: (ids: string[]) => void;
+}) {
+  const [checked, setChecked] = useState<string[]>(selectedIds);
+
+  const toggle = (id: string) => {
+    setChecked((current) =>
+      current.includes(id) ? current.filter((termId) => termId !== id) : [...current, id],
+    );
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="quick-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="quick-modal-head">
+          <div className="quick-modal-title">Terms & Conditions</div>
+          <button onClick={onClose} className="modal-close" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {allTerms.map((term) => {
+            const active = checked.includes(term.id);
+            return (
+              <label
+                key={term.id}
+                className="flex items-start gap-3 rounded-2xl border p-3 transition"
+                style={{
+                  borderColor: active ? "var(--border-strong)" : "var(--border)",
+                  background: active ? "rgba(249,115,22,0.04)" : "#fff",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => toggle(term.id)}
+                  className="mt-1 h-4 w-4 accent-orange-500"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-extrabold text-slate-900">
+                    {term.title || "Standard Term"}
+                  </div>
+                  <div className="mt-1 text-sm leading-relaxed text-slate-600">{term.body}</div>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="modal-action-grid mt-4 gap-3">
+          <button className="btn-outline justify-center" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn-primary" onClick={() => onSave(checked)}>
+            Save Selected Terms
+          </button>
+        </div>
       </div>
     </div>
   );

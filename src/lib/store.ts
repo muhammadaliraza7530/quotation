@@ -69,6 +69,7 @@ export type Doc = {
   projectType?: string;
   items: LineItem[];
   notes: string;
+  termIds?: string[];
   discount: number;
   installation?: number;
   delivery?: number;
@@ -261,6 +262,7 @@ export const emptyDoc = (type: DocType): Doc => ({
     type === "quotation"
       ? "Half Payment Required To start\n\nHigh Quality Work\nMoney Back Guarantee\n7-15 Days"
       : "",
+  termIds: getTerms().map((t) => t.id),
   discount: 0,
   projectType: "Home",
   createdAt: Date.now(),
