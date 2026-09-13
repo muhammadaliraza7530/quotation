@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Navigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getRemoteSettings } from "@/lib/remote-settings";
@@ -21,8 +21,11 @@ export const Route = createFileRoute("/app")({
 
 function GatedApp() {
   const { user, ready } = useAuth();
+  const hydratedUserId = useRef<string | null>(null);
   useEffect(() => {
     if (!user) return;
+    if (hydratedUserId.current === user.id) return;
+    hydratedUserId.current = user.id;
     const hydrate = async () => {
       try {
         const settings = await getRemoteSettings();
