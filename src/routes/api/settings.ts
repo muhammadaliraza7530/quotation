@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { handleError, parseJson, validateBody } from "@/lib/api";
+import { ApiError, handleError, parseJson, validateBody } from "@/lib/api";
 
 const SettingsSchema = z.object({
   business: z.unknown().optional(),
@@ -10,6 +10,16 @@ const SettingsSchema = z.object({
   pin: z.string().nullable().optional(),
   counters: z.record(z.string(), z.number()).optional(),
 });
+
+function throwSettingsDatabaseError(error: { message: string }) {
+  if (error.message.includes("user_settings") || error.message.includes("PGRST205")) {
+    throw new ApiError(
+      "Database migration required: public.user_settings is missing. Apply the latest Supabase migrations.",
+      503,
+    );
+  }
+  throw new Error(error.message);
+}
 
 export const Route = createFileRoute("/api/settings")({
   server: {
@@ -24,7 +34,7 @@ export const Route = createFileRoute("/api/settings")({
               .select("settings")
               .eq("user_id", context.userId)
               .maybeSingle();
-            if (error) throw new Error(error.message);
+            if (error) throwSettingsDatabaseError(error);
             return Response.json({ data: data?.settings ?? {} });
           } catch (error) {
             return handleError(error);
@@ -39,7 +49,7 @@ export const Route = createFileRoute("/api/settings")({
               .select("settings")
               .eq("user_id", context.userId)
               .maybeSingle();
-            if (readError) throw new Error(readError.message);
+            if (readError) throwSettingsDatabaseError(readError);
 
             const merged = { ...(existing?.settings ?? {}), ...settings };
             const { data, error } = await context.supabase
@@ -47,7 +57,7 @@ export const Route = createFileRoute("/api/settings")({
               .upsert({ user_id: context.userId, settings: merged }, { onConflict: "user_id" })
               .select("settings")
               .single();
-            if (error) throw new Error(error.message);
+            if (error) throwSettingsDatabaseError(error);
             return Response.json({ data: data.settings });
           } catch (error) {
             return handleError(error);
