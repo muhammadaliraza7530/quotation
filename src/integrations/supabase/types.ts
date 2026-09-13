@@ -10,20 +10,32 @@ export type Database = {
     Tables: {
       user_settings: {
         Row: {
+          business_info: Json;
           created_at: string;
-          settings: Json;
+          id: string;
+          pin: string | null;
+          products: Json;
+          terms: Json;
           updated_at: string;
           user_id: string;
         };
         Insert: {
+          business_info?: Json;
           created_at?: string;
-          settings?: Json;
+          id?: string;
+          pin?: string | null;
+          products?: Json;
+          terms?: Json;
           updated_at?: string;
           user_id: string;
         };
         Update: {
+          business_info?: Json;
           created_at?: string;
-          settings?: Json;
+          id?: string;
+          pin?: string | null;
+          products?: Json;
+          terms?: Json;
           updated_at?: string;
           user_id?: string;
         };
