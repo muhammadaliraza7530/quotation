@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { getRemoteSettings, saveRemoteSettings } from "@/lib/remote-settings";
 import {
   getProducts,
+  setProducts,
   upsertProduct,
   deleteProduct,
   uid,
@@ -25,7 +27,19 @@ function ProductsPage() {
   const [sort, setSort] = useState<"new" | "name" | "priceAsc" | "priceDesc">("new");
 
   useEffect(() => {
-    setList(getProducts());
+    const load = async () => {
+      try {
+        const remote = await getRemoteSettings();
+        const products = remote.products ?? getProducts();
+        setProducts(products);
+        setList(products);
+        if (!remote.products) await saveRemoteSettings({ products });
+      } catch (error) {
+        console.error("Unable to load products", error);
+        setList(getProducts());
+      }
+    };
+    void load();
   }, []);
 
   // Merge built-in preset products (from quotation builder) so they show here too.
@@ -66,20 +80,44 @@ function ProductsPage() {
     return out;
   }, [combined, q, sort]);
 
-  const save = (p: Product) => {
+  const save = async (p: Product) => {
+    const next = list.some((item) => item.id === p.id)
+      ? list.map((item) => (item.id === p.id ? p : item))
+      : [p, ...list];
+    try {
+      await saveRemoteSettings({ products: next });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to save product");
+      return;
+    }
     upsertProduct(p);
-    setList(getProducts());
+    setProducts(next);
+    setList(next);
     setEditing(null);
   };
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
     if (!confirm("Delete this product?")) return;
-    deleteProduct(id);
-    setList(getProducts());
+    const next = list.filter((product) => product.id !== id);
+    try {
+      await saveRemoteSettings({ products: next });
+      deleteProduct(id);
+      setProducts(next);
+      setList(next);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to delete product");
+    }
   };
-  const duplicate = (p: Product) => {
+  const duplicate = async (p: Product) => {
     const copy: Product = { ...p, id: uid(), name: p.name + " (copy)", createdAt: Date.now() };
-    upsertProduct(copy);
-    setList(getProducts());
+    const next = [copy, ...list];
+    try {
+      await saveRemoteSettings({ products: next });
+      upsertProduct(copy);
+      setProducts(next);
+      setList(next);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to duplicate product");
+    }
   };
   const startNew = () =>
     setEditing({

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getBusiness, setBusiness, type Business } from "@/lib/store";
+import { getRemoteSettings, saveRemoteSettings } from "@/lib/remote-settings";
 import { Info, Upload, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/app/business")({
@@ -17,7 +18,19 @@ function BusinessPage() {
   const [logoErr, setLogoErr] = useState<string | null>(null);
 
   useEffect(() => {
-    setB(getBusiness());
+    const load = async () => {
+      try {
+        const remote = await getRemoteSettings();
+        const business = remote.business ?? getBusiness();
+        setBusiness(business);
+        setB(business);
+        if (!remote.business) await saveRemoteSettings({ business });
+      } catch (error) {
+        console.error("Unable to load business settings", error);
+        setB(getBusiness());
+      }
+    };
+    void load();
   }, []);
   if (!b) return null;
 
@@ -74,9 +87,14 @@ function BusinessPage() {
 
   const removeLogo = () => b && setB({ ...b, logo: "" });
 
-  const save = () => {
-    setBusiness(b);
-    nav({ to: "/app/dashboard" });
+  const save = async () => {
+    try {
+      await saveRemoteSettings({ business: b });
+      setBusiness(b);
+      nav({ to: "/app/dashboard" });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to save business settings");
+    }
   };
 
   return (

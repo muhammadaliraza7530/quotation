@@ -21,6 +21,7 @@ import { Route as ApiClientsRouteImport } from './routes/api/clients'
 import { Route as ApiInvoicesRouteImport } from './routes/api/invoices'
 import { Route as ApiProfileRouteImport } from './routes/api/profile'
 import { Route as ApiQuotationsRouteImport } from './routes/api/quotations'
+import { Route as ApiSettingsRouteImport } from './routes/api/settings'
 import { Route as AppBusinessRouteImport } from './routes/app.business'
 import { Route as AppCustomersRouteImport } from './routes/app.customers'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
@@ -93,6 +94,11 @@ const ApiProfileRoute = ApiProfileRouteImport.update({
 const ApiQuotationsRoute = ApiQuotationsRouteImport.update({
   id: '/api/quotations',
   path: '/api/quotations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSettingsRoute = ApiSettingsRouteImport.update({
+  id: '/api/settings',
+  path: '/api/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppBusinessRoute = AppBusinessRouteImport.update({
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/api/invoices': typeof ApiInvoicesRouteWithChildren
   '/api/profile': typeof ApiProfileRoute
   '/api/quotations': typeof ApiQuotationsRouteWithChildren
+  '/api/settings': typeof ApiSettingsRoute
   '/app/business': typeof AppBusinessRoute
   '/app/customers': typeof AppCustomersRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/api/invoices': typeof ApiInvoicesRouteWithChildren
   '/api/profile': typeof ApiProfileRoute
   '/api/quotations': typeof ApiQuotationsRouteWithChildren
+  '/api/settings': typeof ApiSettingsRoute
   '/app/business': typeof AppBusinessRoute
   '/app/customers': typeof AppCustomersRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/api/invoices': typeof ApiInvoicesRouteWithChildren
   '/api/profile': typeof ApiProfileRoute
   '/api/quotations': typeof ApiQuotationsRouteWithChildren
+  '/api/settings': typeof ApiSettingsRoute
   '/app/business': typeof AppBusinessRoute
   '/app/customers': typeof AppCustomersRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/api/invoices'
     | '/api/profile'
     | '/api/quotations'
+    | '/api/settings'
     | '/app/business'
     | '/app/customers'
     | '/app/dashboard'
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
     | '/api/invoices'
     | '/api/profile'
     | '/api/quotations'
+    | '/api/settings'
     | '/app/business'
     | '/app/customers'
     | '/app/dashboard'
@@ -312,6 +323,7 @@ export interface FileRouteTypes {
     | '/api/invoices'
     | '/api/profile'
     | '/api/quotations'
+    | '/api/settings'
     | '/app/business'
     | '/app/customers'
     | '/app/dashboard'
@@ -340,6 +352,7 @@ export interface RootRouteChildren {
   ApiInvoicesRoute: typeof ApiInvoicesRouteWithChildren
   ApiProfileRoute: typeof ApiProfileRoute
   ApiQuotationsRoute: typeof ApiQuotationsRouteWithChildren
+  ApiSettingsRoute: typeof ApiSettingsRoute
   ApiAuthForgotPasswordRoute: typeof ApiAuthForgotPasswordRoute
   ApiAuthResetPasswordRoute: typeof ApiAuthResetPasswordRoute
 }
@@ -428,6 +441,13 @@ declare module '@tanstack/react-router' {
       path: '/api/quotations'
       fullPath: '/api/quotations'
       preLoaderRoute: typeof ApiQuotationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/settings': {
+      id: '/api/settings'
+      path: '/api/settings'
+      fullPath: '/api/settings'
+      preLoaderRoute: typeof ApiSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/business': {
@@ -597,6 +617,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiInvoicesRoute: ApiInvoicesRouteWithChildren,
   ApiProfileRoute: ApiProfileRoute,
   ApiQuotationsRoute: ApiQuotationsRouteWithChildren,
+  ApiSettingsRoute: ApiSettingsRoute,
   ApiAuthForgotPasswordRoute: ApiAuthForgotPasswordRoute,
   ApiAuthResetPasswordRoute: ApiAuthResetPasswordRoute,
 }

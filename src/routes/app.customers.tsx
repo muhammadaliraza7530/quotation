@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { getCustomers, upsertCustomer, deleteCustomer, uid, type Customer } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import { getCustomers, setCustomers, uid, type Customer } from "@/lib/store";
 import { Search, Plus, Pencil, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
 
 export const Route = createFileRoute("/app/customers")({
@@ -13,9 +14,60 @@ function CustomersPage() {
   const [list, setList] = useState<Customer[]>([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setList(getCustomers());
+    const load = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user.id;
+        if (!userId) throw new Error("Session expired");
+
+        const { data, error } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+
+        if (data.length === 0) {
+          const legacy = getCustomers();
+          if (legacy.length > 0) {
+            const { data: migrated, error: migrationError } = await supabase
+              .from("clients")
+              .upsert(
+                legacy.map((customer) => ({
+                  id: customer.id,
+                  user_id: userId,
+                  name: customer.name || customer.company || "Client",
+                  company: customer.company || null,
+                  phone: customer.phone || null,
+                  address: customer.address || null,
+                  logo: customer.logo || null,
+                })),
+                { onConflict: "id" },
+              )
+              .select("*");
+            if (migrationError) throw migrationError;
+            const customers = migrated.map(toCustomer);
+            setCustomers(customers);
+            setList(customers);
+            return;
+          }
+        }
+
+        const customers = data.map(toCustomer);
+        setCustomers(customers);
+        setList(customers);
+      } catch (error) {
+        console.error("Unable to load clients", error);
+        setList(getCustomers());
+        alert(error instanceof Error ? error.message : "Unable to load clients");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
   }, []);
 
   const filtered = useMemo(() => {
@@ -29,15 +81,47 @@ function CustomersPage() {
     );
   }, [list, q]);
 
-  const save = (c: Customer) => {
-    upsertCustomer(c);
-    setList(getCustomers());
-    setEditing(null);
+  const save = async (c: Customer) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (!userId) throw new Error("Session expired");
+      const { data, error } = await supabase
+        .from("clients")
+        .upsert({
+          id: c.id,
+          user_id: userId,
+          name: c.name || c.company || "Client",
+          company: c.company || null,
+          phone: c.phone || null,
+          address: c.address || null,
+          logo: c.logo || null,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const saved = toCustomer(data);
+      const next = list.some((item) => item.id === saved.id)
+        ? list.map((item) => (item.id === saved.id ? saved : item))
+        : [saved, ...list];
+      setCustomers(next);
+      setList(next);
+      setEditing(null);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to save client");
+    }
   };
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
     if (!confirm("Delete this customer?")) return;
-    deleteCustomer(id);
-    setList(getCustomers());
+    try {
+      const { error } = await supabase.from("clients").delete().eq("id", id);
+      if (error) throw error;
+      const next = list.filter((customer) => customer.id !== id);
+      setCustomers(next);
+      setList(next);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to delete client");
+    }
   };
   const startNew = () =>
     setEditing({ id: uid(), name: "", company: "", phone: "", address: "", createdAt: Date.now() });
@@ -58,7 +142,8 @@ function CustomersPage() {
       </div>
 
       <div className="space-y-2">
-        {filtered.length === 0 && (
+        {loading && <div className="text-center text-sm text-muted-foreground py-10">Loading clients...</div>}
+        {!loading && filtered.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-10">
             No customers yet. Tap Add Customer.
           </div>
@@ -103,6 +188,26 @@ function CustomersPage() {
       )}
     </AppShell>
   );
+}
+
+function toCustomer(row: {
+  id: string;
+  name: string;
+  company: string | null;
+  phone: string | null;
+  address: string | null;
+  logo: string | null;
+  created_at: string;
+}): Customer {
+  return {
+    id: row.id,
+    name: row.name || "",
+    company: row.company || "",
+    phone: row.phone || "",
+    address: row.address || "",
+    logo: row.logo || undefined,
+    createdAt: new Date(row.created_at).getTime(),
+  };
 }
 
 function CustomerModal({

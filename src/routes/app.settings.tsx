@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getPin, setPin } from "@/lib/store";
+import { getRemoteSettings, saveRemoteSettings } from "@/lib/remote-settings";
 import { Lock } from "lucide-react";
 
 export const Route = createFileRoute("/app/settings")({
@@ -14,18 +15,39 @@ function SettingsPage() {
   const [hasPin, setHasPin] = useState(false);
 
   useEffect(() => {
-    setHasPin(!!getPin());
+    const load = async () => {
+      try {
+        const remote = await getRemoteSettings();
+        if (remote.pin !== undefined) {
+          setPin(remote.pin);
+          setHasPin(!!remote.pin);
+        } else {
+          const localPin = getPin();
+          setHasPin(!!localPin);
+          await saveRemoteSettings({ pin: localPin });
+        }
+      } catch (error) {
+        console.error("Unable to load settings", error);
+        setHasPin(!!getPin());
+      }
+    };
+    void load();
   }, []);
 
-  const savePin = () => {
+  const savePin = async () => {
     if (pin && pin.length < 4) {
       alert("PIN must be at least 4 digits");
       return;
     }
-    setPin(pin || null);
-    setHasPin(!!pin);
-    setPinState("");
-    alert(pin ? "PIN saved" : "PIN removed");
+    try {
+      await saveRemoteSettings({ pin: pin || null });
+      setPin(pin || null);
+      setHasPin(!!pin);
+      setPinState("");
+      alert(pin ? "PIN saved" : "PIN removed");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to save PIN");
+    }
   };
 
   return (

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getTerms, setTerms, uid, type Term } from "@/lib/store";
+import { getRemoteSettings, saveRemoteSettings } from "@/lib/remote-settings";
 import { Plus, Trash2 } from "lucide-react";
 import { AutoResizeTextarea } from "@/components/AutoResizeTextarea";
 
@@ -13,7 +14,19 @@ export const Route = createFileRoute("/app/terms")({
 function TermsPage() {
   const [list, setList] = useState<Term[]>([]);
   useEffect(() => {
-    setList(getTerms());
+    const load = async () => {
+      try {
+        const remote = await getRemoteSettings();
+        const terms = remote.terms ?? getTerms();
+        setTerms(terms);
+        setList(terms);
+        if (!remote.terms) await saveRemoteSettings({ terms });
+      } catch (error) {
+        console.error("Unable to load terms", error);
+        setList(getTerms());
+      }
+    };
+    void load();
   }, []);
 
   const update = (id: string, patch: Partial<Term>) => {
@@ -22,9 +35,14 @@ function TermsPage() {
   };
   const add = () => setList([...list, { id: uid(), title: "New Term", body: "" }]);
   const remove = (id: string) => setList(list.filter((t) => t.id !== id));
-  const save = () => {
-    setTerms(list);
-    alert("Saved");
+  const save = async () => {
+    try {
+      await saveRemoteSettings({ terms: list });
+      setTerms(list);
+      alert("Saved");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to save terms");
+    }
   };
 
   return (

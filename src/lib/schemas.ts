@@ -105,6 +105,7 @@ export const QuotationUpdateSchema = z.object({
 
 export const ClientCreateSchema = z.object({
   name: z.string().trim().min(1),
+  logo: nullableString,
   email: z.string().email().optional().nullable(),
   phone: nullableString,
   address: nullableString,

@@ -56,6 +56,7 @@ import { UnitPicker } from "@/components/UnitPicker";
 import { AutoResizeTextarea } from "@/components/AutoResizeTextarea";
 import type { TemplateId } from "@/lib/pdf";
 import { normalizeProductDescriptionText } from "@/lib/product-text";
+import { saveRemoteSettings } from "@/lib/remote-settings";
 
 const TYPES: DocType[] = ["quotation", "invoice", "po", "proforma", "delivery", "receipt"];
 
@@ -389,22 +390,66 @@ function DocForm() {
     });
   };
 
-  const saveNewClient = (c: Customer) => {
+  const saveNewClient = async (c: Customer) => {
     if (!doc) return;
-    upsertCustomer(c);
-    const list = getCustomers();
-    setCustomers(list);
-    patch({
-      customerId: c.id,
-      customerSnap: { name: c.name, company: c.company, phone: c.phone, address: c.address },
-    });
-    setNewClientOpen(false);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (!userId) throw new Error("Session expired");
+      const { data, error } = await supabase
+        .from("clients")
+        .upsert({
+          id: c.id,
+          user_id: userId,
+          name: c.name || c.company || "Client",
+          company: c.company || null,
+          phone: c.phone || null,
+          address: c.address || null,
+          logo: c.logo || null,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const savedCustomer: Customer = {
+        id: data.id,
+        name: data.name || "",
+        company: data.company || "",
+        phone: data.phone || "",
+        address: data.address || "",
+        logo: data.logo || undefined,
+        createdAt: new Date(data.created_at).getTime(),
+      };
+      upsertCustomer(savedCustomer);
+      setCustomers((current) => [
+        savedCustomer,
+        ...current.filter((customer) => customer.id !== savedCustomer.id),
+      ]);
+      patch({
+        customerId: savedCustomer.id,
+        customerSnap: {
+          name: savedCustomer.name,
+          company: savedCustomer.company,
+          phone: savedCustomer.phone,
+          address: savedCustomer.address,
+        },
+      });
+      setNewClientOpen(false);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to save client");
+    }
   };
 
-  const saveNewProduct = (p: Product, addToDoc: boolean) => {
+  const saveNewProduct = async (p: Product, addToDoc: boolean) => {
     if (!doc) return;
-    upsertProduct(p);
-    setProducts(getProducts());
+    const nextProducts = [p, ...products.filter((product) => product.id !== p.id)];
+    try {
+      await saveRemoteSettings({ products: nextProducts });
+      upsertProduct(p);
+      setProducts(nextProducts);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Unable to save product");
+      return;
+    }
     if (addToDoc) {
       const desc = [p.description, p.hsn && `HSN: ${p.hsn}`].filter(Boolean).join(" · ");
       patch({
