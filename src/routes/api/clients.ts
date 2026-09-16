@@ -51,7 +51,11 @@ export const Route = createFileRoute("/api/clients")({
               .single();
 
             if (error) {
-              throw new Error(error.message);
+              console.error("[POST /api/clients] Supabase insert failed", error);
+              return Response.json(
+                { error: error.message, code: error.code, details: error.details },
+                { status: 400 },
+              );
             }
 
             return Response.json({ data: created }, { status: 201 });
