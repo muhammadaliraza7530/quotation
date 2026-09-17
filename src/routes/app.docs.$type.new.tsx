@@ -54,6 +54,7 @@ import { TemplatePicker } from "@/components/TemplatePicker";
 import { PdfPreviewModal } from "@/components/PdfPreviewModal";
 import { UnitPicker } from "@/components/UnitPicker";
 import { AutoResizeTextarea } from "@/components/AutoResizeTextarea";
+import { getFreshAuthToken, getFreshUserId } from "@/lib/auth";
 import type { TemplateId } from "@/lib/pdf";
 import { normalizeProductDescriptionText } from "@/lib/product-text";
 import { saveRemoteSettings } from "@/lib/remote-settings";
@@ -208,8 +209,11 @@ function DocForm() {
   const totals = useMemo(() => (doc ? docTotals(doc) : { subtotal: 0, tax: 0, total: 0 }), [doc]);
 
   const getAuthToken = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
+    try {
+      return await getFreshAuthToken();
+    } catch {
+      return null;
+    }
   }, []);
 
   const buildQuotationPayload = useCallback(
@@ -393,9 +397,7 @@ function DocForm() {
   const saveNewClient = async (c: Customer) => {
     if (!doc) return;
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      if (!userId) throw new Error("Session expired");
+      const userId = await getFreshUserId();
       const { data, error } = await supabase
         .from("clients")
         .upsert({

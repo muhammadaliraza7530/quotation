@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
+import { getFreshUserId } from "@/lib/auth";
 import { getCustomers, setCustomers, uid, type Customer } from "@/lib/store";
 import { Search, Plus, Pencil, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
 
@@ -19,9 +20,7 @@ function CustomersPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData.session?.user.id;
-        if (!userId) throw new Error("Session expired");
+        const userId = await getFreshUserId();
 
         const { data, error } = await supabase
           .from("clients")
@@ -83,9 +82,7 @@ function CustomersPage() {
 
   const save = async (c: Customer) => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      if (!userId) throw new Error("Session expired");
+      const userId = await getFreshUserId();
       const { data, error } = await supabase
         .from("clients")
         .upsert({

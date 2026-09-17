@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getFreshAuthToken } from "@/lib/auth";
 import type { Business, Product, Term } from "@/lib/store";
 
 export type RemoteSettings = {
@@ -10,9 +11,7 @@ export type RemoteSettings = {
 };
 
 async function request<T>(method: "GET" | "PUT", body?: RemoteSettings): Promise<T> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Session expired");
+  const token = await getFreshAuthToken();
   const response = await fetch("/api/settings", {
     method,
     headers: {

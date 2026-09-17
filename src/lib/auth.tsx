@@ -40,6 +40,40 @@ function toUser(u: SupaUser | undefined | null): User | null {
   };
 }
 
+export async function getFreshSession(): Promise<Session | null> {
+  const { data: currentData, error: currentError } = await supabase.auth.getSession();
+  if (currentError) throw currentError;
+
+  const currentSession = currentData.session;
+  const expiresAt = currentSession?.expires_at ?? 0;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+
+  if (currentSession && expiresAt > nowSeconds + 30) {
+    return currentSession;
+  }
+
+  const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshError) throw refreshError;
+
+  return refreshedData.session ?? null;
+}
+
+export async function getFreshAuthToken(): Promise<string> {
+  const session = await getFreshSession();
+  if (!session?.access_token) {
+    throw new Error("Session expired");
+  }
+  return session.access_token;
+}
+
+export async function getFreshUserId(): Promise<string> {
+  const session = await getFreshSession();
+  if (!session?.user?.id) {
+    throw new Error("Session expired");
+  }
+  return session.user.id;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
