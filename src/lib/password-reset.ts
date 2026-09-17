@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { ApiError } from "@/lib/api";
 
@@ -18,12 +18,36 @@ function normalizeEmail(email: string) {
 }
 
 export function buildResetLink(token: string) {
+  return `${buildResetPageUrl()}?token=${encodeURIComponent(token)}`;
+}
+
+export function buildResetPageUrl() {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.APP_URL ||
     process.env.VITE_APP_URL ||
     "http://localhost:3000";
-  return `${baseUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+  return `${baseUrl.replace(/\/$/, "")}/reset-password`;
+}
+
+export async function sendSupabasePasswordResetEmail(email: string) {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!url || !key) {
+    throw new ApiError("Password reset service is not configured.", 500);
+  }
+
+  const supabase = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), {
+    redirectTo: buildResetPageUrl(),
+  });
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
