@@ -26,5 +26,6 @@ async function request<T>(method: "GET" | "PUT", body?: RemoteSettings): Promise
 }
 
 export const getRemoteSettings = () => request<RemoteSettings>("GET");
+
 export const saveRemoteSettings = (settings: RemoteSettings) =>
   request<RemoteSettings>("PUT", settings);

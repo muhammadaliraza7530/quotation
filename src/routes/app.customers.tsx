@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { getFreshUserId } from "@/lib/auth";
+import { getFreshAuthToken, getFreshUserId } from "@/lib/auth";
 import { getCustomers, setCustomers, uid, type Customer } from "@/lib/store";
 import { Search, Plus, Pencil, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
 
@@ -82,22 +82,31 @@ function CustomersPage() {
 
   const save = async (c: Customer) => {
     try {
-      const userId = await getFreshUserId();
-      const { data, error } = await supabase
-        .from("clients")
-        .upsert({
-          id: c.id,
-          user_id: userId,
+      const token = await getFreshAuthToken();
+      const isExisting = list.some((item) => item.id === c.id);
+      const url = isExisting ? `/api/clients/${encodeURIComponent(c.id)}` : "/api/clients";
+      const method = isExisting ? "PUT" : "POST";
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
           name: c.name || c.company || "Client",
           company: c.company || null,
           phone: c.phone || null,
           address: c.address || null,
           logo: c.logo || null,
-        })
-        .select("*")
-        .single();
-      if (error) throw error;
-      const saved = toCustomer(data);
+          email: null,
+          notes: null,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || `Unable to save client (${response.status})`);
+      }
+      const saved = toCustomer(payload.data);
       const next = list.some((item) => item.id === saved.id)
         ? list.map((item) => (item.id === saved.id ? saved : item))
         : [saved, ...list];
@@ -139,7 +148,9 @@ function CustomersPage() {
       </div>
 
       <div className="space-y-2">
-        {loading && <div className="text-center text-sm text-muted-foreground py-10">Loading clients...</div>}
+        {loading && (
+          <div className="text-center text-sm text-muted-foreground py-10">Loading clients...</div>
+        )}
         {!loading && filtered.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-10">
             No customers yet. Tap Add Customer.

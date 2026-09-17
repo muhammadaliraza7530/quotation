@@ -8,7 +8,10 @@ import {
   type Doc,
   type Term,
 } from "./store";
-import { PRODUCT_DESCRIPTION_MAX_FONT_SIZE, sanitizeProductDescriptionForPdf } from "./product-text";
+import {
+  PRODUCT_DESCRIPTION_MAX_FONT_SIZE,
+  sanitizeProductDescriptionForPdf,
+} from "./product-text";
 
 // Palette mirrors the reference "Aman Trader Quotation Maker" premium PDF.
 const ORANGE = { r: 247, g: 115, b: 22 };

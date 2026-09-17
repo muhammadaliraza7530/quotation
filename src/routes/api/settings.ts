@@ -67,7 +67,7 @@ export const Route = createFileRoute("/api/settings")({
                   business_info: (settings.business ?? existing?.business_info ?? {}) as Json,
                   products: (settings.products ?? existing?.products ?? []) as Json,
                   terms: (settings.terms ?? existing?.terms ?? []) as Json,
-                  pin: settings.pin !== undefined ? settings.pin : existing?.pin ?? null,
+                  pin: settings.pin !== undefined ? settings.pin : (existing?.pin ?? null),
                 },
                 { onConflict: "user_id" },
               )

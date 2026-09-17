@@ -397,21 +397,28 @@ function DocForm() {
   const saveNewClient = async (c: Customer) => {
     if (!doc) return;
     try {
-      const userId = await getFreshUserId();
-      const { data, error } = await supabase
-        .from("clients")
-        .upsert({
-          id: c.id,
-          user_id: userId,
+      const token = await getFreshAuthToken();
+      const response = await fetch("/api/clients", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
           name: c.name || c.company || "Client",
           company: c.company || null,
           phone: c.phone || null,
           address: c.address || null,
           logo: c.logo || null,
-        })
-        .select("*")
-        .single();
-      if (error) throw error;
+          email: null,
+          notes: null,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || `Unable to save client (${response.status})`);
+      }
+      const data = payload.data;
       const savedCustomer: Customer = {
         id: data.id,
         name: data.name || "",

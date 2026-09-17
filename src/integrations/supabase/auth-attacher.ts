@@ -17,7 +17,11 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
     if (session && session.expires_at && session.expires_at <= Math.floor(Date.now() / 1000) + 30) {
       const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
       if (!refreshError) {
-        return next({ headers: refreshedData.session?.access_token ? { Authorization: `Bearer ${refreshedData.session.access_token}` } : {} });
+        return next({
+          headers: refreshedData.session?.access_token
+            ? { Authorization: `Bearer ${refreshedData.session.access_token}` }
+            : {},
+        });
       }
     }
 
