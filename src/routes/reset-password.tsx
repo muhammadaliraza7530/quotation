@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock, Loader2, KeyRound } from "lucide-react";
 import { AuthLayout, Field } from "./login";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
@@ -31,27 +32,34 @@ function ResetPassword() {
     }
 
     const token = new URLSearchParams(window.location.search).get("token") || "";
-    if (!token) {
-      setError("Missing reset token.");
-      return;
-    }
 
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
-      });
-      const data = (await response.json()) as { error?: string; message?: string };
+      let message = "Password updated successfully.";
 
-      if (!response.ok) {
-        setError(data.error || "Unable to reset password.");
-        return;
+      if (token) {
+        const response = await fetch("/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, password }),
+        });
+        const data = (await response.json()) as { error?: string; message?: string };
+
+        if (!response.ok) {
+          setError(data.error || "Unable to reset password.");
+          return;
+        }
+        message = data.message || message;
+      } else {
+        const { error: updateError } = await supabase.auth.updateUser({ password });
+        if (updateError) {
+          setError(updateError.message);
+          return;
+        }
       }
 
-      setInfo(data.message || "Password updated successfully.");
+      setInfo(message);
       setTimeout(() => nav({ to: "/login", replace: true }), 600);
     } catch {
       setError("Unable to reset password right now.");
