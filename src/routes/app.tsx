@@ -1,17 +1,20 @@
 import { createFileRoute, Outlet, Navigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { useAuth } from "@/lib/auth";
+import { getFreshAuthToken, useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getRemoteSettings } from "@/lib/remote-settings";
 import {
   getCustomers,
+  getDocs,
   getProducts,
   getTerms,
+  setDocs,
   setBusiness,
   setCustomers,
   setPin,
   setProducts,
   setTerms,
+  type Doc,
 } from "@/lib/store";
 
 export const Route = createFileRoute("/app")({
@@ -33,6 +36,51 @@ function GatedApp() {
         if (settings.products) setProducts(settings.products);
         if (settings.terms) setTerms(settings.terms);
         if (settings.pin !== undefined) setPin(settings.pin);
+
+        const quotationsResponse = await fetch("/api/quotations?limit=100", {
+          headers: { Authorization: `Bearer ${await getFreshAuthToken()}` },
+        });
+        if (!quotationsResponse.ok) throw new Error("Unable to load remote quotations");
+        const quotationsPayload = (await quotationsResponse.json()) as {
+          data?: Array<{
+            id: string;
+            invoice_number: string;
+            doc_type: Doc["type"];
+            issue_date: string;
+            client_name: string;
+            client_phone: string | null;
+            client_address: string | null;
+            items: Doc["items"];
+            notes: string | null;
+            terms: string | null;
+            discount: number;
+            tax_rate: number;
+            status: string;
+            created_at: string;
+          }>;
+        };
+        const remoteDocs: Doc[] = (quotationsPayload.data ?? []).map((quotation) => ({
+          id: quotation.id,
+          type: quotation.doc_type,
+          no: quotation.invoice_number,
+          date: new Date(quotation.issue_date).getTime(),
+          customerSnap: {
+            name: quotation.client_name,
+            company: "",
+            phone: quotation.client_phone || "",
+            address: quotation.client_address || "",
+          },
+          items: quotation.items || [],
+          notes: quotation.notes || "",
+          termIds: quotation.terms ? [] : undefined,
+          discount: quotation.discount || 0,
+          gstPct: quotation.tax_rate || 0,
+          status: quotation.status === "draft" ? "pending" : (quotation.status as Doc["status"]),
+          createdAt: new Date(quotation.created_at).getTime(),
+        }));
+        const localDocs = getDocs();
+        const remoteIds = new Set(remoteDocs.map((doc) => doc.id));
+        setDocs([...remoteDocs, ...localDocs.filter((doc) => !remoteIds.has(doc.id))]);
 
         const { data, error } = await supabase
           .from("clients")
